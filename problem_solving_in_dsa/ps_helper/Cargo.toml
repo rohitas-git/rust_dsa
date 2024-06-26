@@ -1,7 +1,6 @@
 [package]
-name = "strings"
+name = "ps_helper"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ps_helper = {path = "../ps_helper"}

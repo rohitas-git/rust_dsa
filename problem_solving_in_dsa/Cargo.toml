@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "arrays",
+    "strings",
+    "ps_helper",
+]

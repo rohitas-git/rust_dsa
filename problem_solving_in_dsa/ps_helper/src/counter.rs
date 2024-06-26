@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::btree_map::Values;
+use std::collections::{hash_map, HashMap};
 use std::hash::Hash;
 use std::iter::FromIterator;
 
@@ -34,6 +35,14 @@ where
 
     pub fn get(&self, item: &T) -> Option<&usize> {
         self.map.get(item)
+    }
+
+    pub fn get_mut(&mut self, item: &T) -> Option<&mut usize> {
+        self.map.get_mut(item)
+    }
+
+    pub fn values(&self) -> hash_map::Values<T, usize> {
+        self.map.values() 
     }
 
     pub fn most_common(&self) -> Option<(&T, &usize)> {

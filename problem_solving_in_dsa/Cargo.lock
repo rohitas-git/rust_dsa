@@ -3,12 +3,16 @@
 version = 3
 
 [[package]]
-name = "custom_help"
+name = "arrays"
+version = "0.1.0"
+
+[[package]]
+name = "ps_helper"
 version = "0.1.0"
 
 [[package]]
 name = "strings"
 version = "0.1.0"
 dependencies = [
- "custom_help",
+ "ps_helper",
 ]
