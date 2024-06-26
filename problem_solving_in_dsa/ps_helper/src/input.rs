@@ -37,6 +37,8 @@ impl User for Input {
             .collect::<Result<Vec<String>, String>>()
     }
 
+    /// Takes stdin handle and reads one line from it
+    /// Then parse that line according to given InputType
     fn read<InputType>(&self) -> Result<InputType, String>
     where
         InputType: Debug + Sized + std::default::Default + std::str::FromStr,
@@ -50,7 +52,7 @@ impl User for Input {
                 Err("Failed to parse the value from string".to_string())
             }
         } else {
-            Ok(InputType::default())
+            Err("End of Input: No more lines to read".to_string())
         }
     }
 }
