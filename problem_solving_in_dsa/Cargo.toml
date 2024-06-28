@@ -1,7 +1,4 @@
 [workspace]
 
-members = [
-    "arrays",
-    "strings",
-    "ps_helper",
-]
+members = ["arrays", "strings", "ps_helper", "others"]
+resolver = "2"
