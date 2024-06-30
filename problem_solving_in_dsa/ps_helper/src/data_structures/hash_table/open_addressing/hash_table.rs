@@ -3,14 +3,18 @@ use super::super::table::Element;
 use super::super::traits::HashTable;
 use super::handler::*;
 use std::fmt::Debug;
+use std::hash::{DefaultHasher, Hasher, SipHasher};
 
 use Element::*;
+
+trait KeyTraitBounds: Default + Clone + Debug + PartialEq + Into<u8>{}
+trait ValueTraitBounds: Default + Clone + Debug + PartialEq {}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct HashNode<K, V>
 where
-    K: Default + Clone + Debug + PartialEq,
-    V: Default + Clone + Debug + PartialEq,
+    K: KeyTraitBounds ,
+    V: ValueTraitBounds,
 {
     key: Option<K>,
     value: Element<V>,
@@ -18,8 +22,8 @@ where
 
 impl<K, V> HashNode<K, V>
 where
-    K: Default + Clone + Debug + PartialEq,
-    V: Default + Clone + Debug + PartialEq,
+    K: KeyTraitBounds,
+    V: ValueTraitBounds,
 {
     fn delete(&mut self) {
         self.key = None;
@@ -36,10 +40,10 @@ where
 
 #[derive(Debug)]
 /// Hash table that uses linear probing to resolve collisions
-pub struct MyHashTable<K, V>
+pub struct OpenAddresserHashTable<K, V>
 where
-    K: Default + Clone + Debug + PartialEq,
-    V: Default + Clone + Debug + PartialEq,
+    K: KeyTraitBounds + Into<u8>,
+    V: ValueTraitBounds,
 {
     table: Vec<HashNode<K, V>>,
     size: usize,
@@ -47,10 +51,10 @@ where
     key_hasher: fn(&K, usize) -> usize,
 }
 
-impl<K, V> Clone for MyHashTable<K, V>
+impl<K, V> Clone for OpenAddresserHashTable<K, V>
 where
-    K: Default + Clone + Debug + PartialEq,
-    V: Default + Clone + Debug + PartialEq,
+    K: KeyTraitBounds,
+    V: ValueTraitBounds,
 {
     fn clone(&self) -> Self {
         Self {
@@ -62,11 +66,20 @@ where
     }
 }
 
-impl<K, V> MyHashTable<K, V>
+impl<K, V> OpenAddresserHashTable<K, V>
 where
-    K: Default + Clone + Debug + PartialEq,
-    V: Default + Clone + Debug + PartialEq,
+    K: KeyTraitBounds,
+    V: ValueTraitBounds,
 {
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            table: vec![HashNode::default(); capacity],
+            size: 0,
+            collision_handler: Box::new(LinearProbingHandler::default()),
+            key_hasher: ,
+        }
+    }
+
     fn next_index(&self, key_hash: usize, table_size: usize, step: usize) -> usize {
         self.collision_handler
             .next_index(key_hash, table_size, step)
@@ -90,21 +103,14 @@ where
     }
 }
 
-impl<V> HashTable for MyHashTable<u32, V>
+impl<V> HashTable for OpenAddresserHashTable<u32, V>
 where
-    V: Default + Clone + Debug + PartialEq,
+    V: ValueTraitBounds,
 {
     type KeyType = u32;
     type ValueType = V;
 
-    fn new(capacity: usize) -> Self {
-        Self {
-            table: vec![HashNode::default(); capacity],
-            size: 0,
-            collision_handler: Box::new(LinearProbingHandler::default()),
-            key_hasher: modular_hash,
-        }
-    }
+    
 
     fn capacity(&self) -> usize {
         self.table.capacity()

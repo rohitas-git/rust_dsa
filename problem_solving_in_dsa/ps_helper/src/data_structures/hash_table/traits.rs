@@ -3,8 +3,7 @@ use super::table::Element;
 pub trait HashTable {
     type KeyType: Clone + Debug + Default;
     type ValueType: Clone + Debug + Default + PartialEq;
-
-    fn new(capacity: usize) -> Self;
+    
     fn size(&self) -> usize;
     fn capacity(&self) -> usize;
     fn hash(&self, target: &Self::KeyType) -> usize;

@@ -5,3 +5,4 @@ mod counter;
 mod input;
 mod parse;
 mod data_structures;
+mod tests;
