@@ -1,6 +1,15 @@
+
+#[cfg(feature = "counter")]
+mod counter;
+#[cfg(feature = "counter")]
 pub use counter::Counter;
+#[cfg(feature = "input")]
+mod input;
+#[cfg(feature = "input")]
 pub use input::Input;
 
-mod counter;
-mod input;
+
+#[cfg(feature = "parse")]
 mod parse;
+#[cfg(feature = "strings")]
+mod strings;

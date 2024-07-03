@@ -4,3 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+
+
+[features]
+default = ["now"]
+now = ["parse", "strings", "input","counter"]
+
+strings = []
+parse = []
+input = []
+counter = []
