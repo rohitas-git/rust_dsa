@@ -4,12 +4,11 @@ use super::super::traits::HashStrategy;
 use super::super::traits::HashTable;
 use super::handler::*;
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
 
 use Element::*;
 
-trait KeyTraitBounds: Default + Clone + Debug + PartialEq + Into<u8> {}
-trait ValueTraitBounds: Default + Clone + Debug + PartialEq {}
+pub trait KeyTraitBounds: Default + Clone + Debug + PartialEq + Into<u8> {}
+pub trait ValueTraitBounds: Default + Clone + Debug + PartialEq {}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct HashNode<K, V>
@@ -28,7 +27,7 @@ where
 {
     fn delete(&mut self) {
         self.key = None;
-        self.value = Empty;
+        self.value = Deleted;
     }
 
     fn new(key: K, value: V) -> Self {
@@ -89,19 +88,6 @@ where
         self.collision_handler
             .next_index(key_hash, table_size, step)
     }
-
-    // pub fn set_linear_probing(&mut self) {
-    //     self.collision_handler = Box::new(LinearProbingHandler::default());
-    // }
-
-    // pub fn set_double_hashing(&mut self) {
-    //     // self.collision_handler = Box::new(DoubleHashingHandler::default());
-    //     todo!("not implemented yet");
-    // }
-
-    // pub fn set_quadratic_probing(&mut self) {
-    //     self.collision_handler = Box::new(QuadraticProbingHandler::default());
-    // }
 
     pub fn set_key_hasher(&mut self, key_hasher: H) {
         self.key_hasher = key_hasher;

@@ -1,12 +1,13 @@
-use std::fmt::Debug;
+use std::{default, fmt::Debug};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Default, PartialEq, Debug)]
 pub enum Element<V>
 where
     V: Clone + Debug + PartialEq,
 {
     Value(V),
     Deleted,
+    #[default]
     Empty,
 }
 
@@ -40,12 +41,6 @@ where
             Element::Value(v) => v.clone(),
             _ => panic!("Not a value"),
         }
-    }
-}
-
-impl<V: Clone + Debug + PartialEq> Default for Element<V> {
-    fn default() -> Self {
-        Element::Empty
     }
 }
 
