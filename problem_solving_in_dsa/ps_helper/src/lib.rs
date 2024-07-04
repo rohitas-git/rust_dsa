@@ -14,4 +14,7 @@ mod parse;
 #[cfg(feature = "strings")]
 mod strings;
 
+#[cfg(feature = "char")]
+mod char;
+
 mod data_structures;

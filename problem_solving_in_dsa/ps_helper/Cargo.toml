@@ -8,9 +8,10 @@ edition = "2021"
 
 [features]
 default = ["now"]
-now = ["parse", "strings", "input","counter"]
+now = ["parse", "strings", "input","counter","char"]
 
 strings = []
 parse = []
 input = []
 counter = []
+char =[]
