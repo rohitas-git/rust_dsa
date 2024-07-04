@@ -1,19 +1,20 @@
-use super::super::hash_functions::basic::common::modular_hash;
+use super::super::hash_functions::basic::common::*;
 use super::super::table::Element;
+use super::super::traits::HashStrategy;
 use super::super::traits::HashTable;
 use super::handler::*;
 use std::fmt::Debug;
-use std::hash::{DefaultHasher, Hasher, SipHasher};
+use std::hash::{Hash, Hasher};
 
 use Element::*;
 
-trait KeyTraitBounds: Default + Clone + Debug + PartialEq + Into<u8>{}
+trait KeyTraitBounds: Default + Clone + Debug + PartialEq + Into<u8> {}
 trait ValueTraitBounds: Default + Clone + Debug + PartialEq {}
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct HashNode<K, V>
 where
-    K: KeyTraitBounds ,
+    K: KeyTraitBounds,
     V: ValueTraitBounds,
 {
     key: Option<K>,
@@ -38,45 +39,49 @@ where
     }
 }
 
-#[derive(Debug)]
-/// Hash table that uses linear probing to resolve collisions
-pub struct OpenAddresserHashTable<K, V>
+pub struct OpenAddresserHashTable<K, V, S, H>
 where
     K: KeyTraitBounds + Into<u8>,
     V: ValueTraitBounds,
+    S: OpenAddressing + Clone,
+    H: HashStrategy<K>,
 {
     table: Vec<HashNode<K, V>>,
     size: usize,
-    collision_handler: Box<dyn OpenAddressing>,
-    key_hasher: fn(&K, usize) -> usize,
+    collision_handler: S,
+    key_hasher: H,
 }
 
-impl<K, V> Clone for OpenAddresserHashTable<K, V>
+impl<K, V, S, H> Clone for OpenAddresserHashTable<K, V, S, H>
 where
     K: KeyTraitBounds,
     V: ValueTraitBounds,
+    S: OpenAddressing + Clone,
+    H: HashStrategy<K> + Clone,
 {
     fn clone(&self) -> Self {
         Self {
             table: self.table.clone(),
             size: self.size,
-            collision_handler: self.collision_handler.clone_as_open_addressing(),
-            key_hasher: self.key_hasher,
+            collision_handler: self.collision_handler.clone(),
+            key_hasher: self.key_hasher.clone(),
         }
     }
 }
 
-impl<K, V> OpenAddresserHashTable<K, V>
+impl<K, V, S, H> OpenAddresserHashTable<K, V, S, H>
 where
     K: KeyTraitBounds,
     V: ValueTraitBounds,
+    S: OpenAddressing + Clone,
+    H: HashStrategy<K>,
 {
-    pub fn new(capacity: usize) -> Self {
+    pub fn new(capacity: usize, collision_handler: S, key_hasher: H) -> Self {
         Self {
             table: vec![HashNode::default(); capacity],
             size: 0,
-            collision_handler: Box::new(LinearProbingHandler::default()),
-            key_hasher: ,
+            collision_handler,
+            key_hasher,
         }
     }
 
@@ -85,32 +90,33 @@ where
             .next_index(key_hash, table_size, step)
     }
 
-    pub fn set_linear_probing(&mut self) {
-        self.collision_handler = Box::new(LinearProbingHandler::default());
-    }
+    // pub fn set_linear_probing(&mut self) {
+    //     self.collision_handler = Box::new(LinearProbingHandler::default());
+    // }
 
-    pub fn set_double_hashing(&mut self) {
-        // self.collision_handler = Box::new(DoubleHashingHandler::default());
-        todo!("not implemented yet");
-    }
+    // pub fn set_double_hashing(&mut self) {
+    //     // self.collision_handler = Box::new(DoubleHashingHandler::default());
+    //     todo!("not implemented yet");
+    // }
 
-    pub fn set_quadratic_probing(&mut self) {
-        self.collision_handler = Box::new(QuadraticProbingHandler::default());
-    }
+    // pub fn set_quadratic_probing(&mut self) {
+    //     self.collision_handler = Box::new(QuadraticProbingHandler::default());
+    // }
 
-    pub fn set_key_hasher(&mut self, key_hasher: fn(&K, usize) -> usize) {
+    pub fn set_key_hasher(&mut self, key_hasher: H) {
         self.key_hasher = key_hasher;
     }
 }
 
-impl<V> HashTable for OpenAddresserHashTable<u32, V>
+impl<K, V, S, H> HashTable for OpenAddresserHashTable<K, V, S, H>
 where
+    K: KeyTraitBounds + Into<u8>,
     V: ValueTraitBounds,
+    S: OpenAddressing + Clone,
+    H: HashStrategy<K>,
 {
-    type KeyType = u32;
+    type KeyType = K;
     type ValueType = V;
-
-    
 
     fn capacity(&self) -> usize {
         self.table.capacity()
@@ -121,21 +127,20 @@ where
     }
 
     fn hash(&self, key: &Self::KeyType) -> usize {
-        (self.key_hasher)(key, self.capacity())
+        self.key_hasher.hash(key, self.capacity())
     }
 
     /// Returns the value mapped to the key in hash table
     fn get_value(&self, key: &Self::KeyType) -> Option<&Element<Self::ValueType>> {
-        if !self.contains_key(&key) {
+        if !self.contains_key(key) {
             return None;
         }
         let key_hash = self.hash(key);
 
-        // Search
         let mut index = key_hash;
         let mut step = 0;
         while !self.table[index].value.is_empty() {
-            if self.table[index].value.is_value() && self.table[index].key == Some(*key) {
+            if self.table[index].value.is_value() && self.table[index].key == Some(key.clone()) {
                 return Some(&self.table[index].value);
             }
             step += 1;
@@ -147,55 +152,34 @@ where
     /// Returns true if key is used in this table
     fn contains_key(&self, target: &Self::KeyType) -> bool {
         let cap = self.capacity();
-        let table = &self.table;
         let key_hash = self.hash(target);
         let mut index = key_hash;
         let mut step = 0;
 
-        if self.size() == 0 {
-            return false;
-        }
-
-        // End the search when
-        // - we find the key
-        // - find empty slot
-        // - transversed whole table
-
-        // While not found empty slot
-        while table[index].value != Empty {
-            if table[index].value.is_value() && table[index].key == Some(*target) {
+        while self.table[index].value != Element::Empty {
+            if self.table[index].value.is_value() && self.table[index].key == Some(target.clone()) {
                 return true;
             }
             step += 1;
             index = self.next_index(key_hash, cap, step);
 
-            // when transversed whole table
             if index == key_hash {
                 return false;
             }
         }
-        true
+        false
     }
 
-    /// Inserts a key-value pair into the map.
-    ///
-    /// If the map did not have this key present, [`None`] is returned.
-    ///
-    /// If the map did have this key present, the value is updated, and the old
-    /// value is returned. The key is not updated, though; this matters for
-    /// types that can be `==` without being identical.
     fn insert(&mut self, key: &Self::KeyType, value: &Self::ValueType) -> Option<Self::ValueType> {
         if self.capacity() == self.size() {
             self.table.resize(2 * self.capacity(), HashNode::default());
         }
 
-        // If key exists, update value and return old
-        // If key does not exist, insert and return None
         if !self.contains_key(key) {
             let key_hash = self.hash(key);
             let mut index = key_hash;
             let mut step = 0;
-            while self.table[index].value != Empty {
+            while self.table[index].value != Element::Empty {
                 step += 1;
                 index = self.next_index(key_hash, self.capacity(), step);
             }
@@ -206,10 +190,11 @@ where
             let key_hash = self.hash(key);
             let mut index = key_hash;
             let mut step = 0;
-            while self.table[index].value != Empty {
-                if self.table[index].value.is_value() && self.table[index].key == Some(*key) {
+            while self.table[index].value != Element::Empty {
+                if self.table[index].value.is_value() && self.table[index].key == Some(key.clone())
+                {
                     let old = self.table[index].value.clone();
-                    self.table[index].value = Value(value.clone());
+                    self.table[index].value = Element::Value(value.clone());
                     return Some(old.unwrap_value());
                 }
                 step += 1;
@@ -229,8 +214,8 @@ where
             return false;
         }
 
-        while self.table[index].value != Empty {
-            if self.table[index].value.is_value() && self.table[index].key == Some(*key) {
+        while self.table[index].value != Element::Empty {
+            if self.table[index].value.is_value() && self.table[index].key == Some(key.clone()) {
                 self.table[index].delete();
                 self.size -= 1;
                 return true;

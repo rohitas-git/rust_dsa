@@ -12,3 +12,7 @@ pub trait HashTable {
     fn insert(&mut self, key: &Self::KeyType, value: &Self::ValueType) -> Option<Self::ValueType>;
     fn delete(&mut self, key: &Self::KeyType) -> bool;
 }
+
+pub trait HashStrategy<K> {
+    fn hash(&self, key: &K, table_capacity: usize) -> usize;
+}
